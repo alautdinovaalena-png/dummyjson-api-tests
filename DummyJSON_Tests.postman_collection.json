@@ -1,0 +1,441 @@
+{
+  "info": {
+    "name": "DummyJSON Tests",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "01 - Успешная авторизация",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Status code is 200\", function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "pm.test(\"Response has accessToken\", function () {",
+              "    const jsonData = pm.response.json();",
+              "    pm.expect(jsonData).to.have.property('accessToken');",
+              "    pm.expect(jsonData.accessToken).to.be.a('string').and.not.empty;",
+              "});",
+              "",
+              "pm.test(\"Response has user id\", function () {",
+              "    const jsonData = pm.response.json();",
+              "    pm.expect(jsonData).to.have.property('id');",
+              "    pm.expect(jsonData.id).to.be.a('number');",
+              "});",
+              "",
+              "const jsonData = pm.response.json();",
+              "pm.environment.set(\"access_token\", jsonData.accessToken);",
+              "pm.environment.set(\"userId\", jsonData.id);",
+              "",
+              "console.log(\"✅ Token saved successfully\");",
+              "console.log(\"✅ User ID saved:\", jsonData.id);"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n    \"username\": \"emilys\",\n    \"password\": \"emilyspass\",\n    \"expiresInMins\": 30\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/auth/login",
+          "host": ["{{base_url}}"],
+          "path": ["auth", "login"]
+        }
+      }
+    },
+    {
+      "name": "02 - Неуспешная авторизация",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Status code is 400\", function () {",
+              "    pm.response.to.have.status(400);",
+              "});",
+              "",
+              "pm.test(\"Response has error message\", function () {",
+              "    const jsonData = pm.response.json();",
+              "    pm.expect(jsonData).to.have.property('message');",
+              "    pm.expect(jsonData.message).to.include('Invalid credentials');",
+              "});",
+              "",
+              "pm.test(\"Response does NOT have accessToken\", function () {",
+              "    const jsonData = pm.response.json();",
+              "    pm.expect(jsonData).to.not.have.property('accessToken');",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n    \"username\": \"emilys\",\n    \"password\": \"wrongpassword\"\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/auth/login",
+          "host": ["{{base_url}}"],
+          "path": ["auth", "login"]
+        }
+      }
+    },
+    {
+      "name": "03 - Получение пользователя с токеном",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Status code is 200\", function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "pm.test(\"Response has user data\", function () {",
+              "    const jsonData = pm.response.json();",
+              "    pm.expect(jsonData).to.have.property('id');",
+              "    pm.expect(jsonData).to.have.property('username');",
+              "    pm.expect(jsonData).to.have.property('email');",
+              "    pm.expect(jsonData.username).to.equal('emilys');",
+              "});",
+              "",
+              "pm.test(\"User ID matches saved ID\", function () {",
+              "    const jsonData = pm.response.json();",
+              "    const expectedId = pm.environment.get(\"userId\");",
+              "    pm.expect(jsonData.id).to.equal(parseInt(expectedId));",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{access_token}}"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/auth/me",
+          "host": ["{{base_url}}"],
+          "path": ["auth", "me"]
+        }
+      }
+    },
+    {
+      "name": "04 - Получение пользователя без токена",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Status code is 401\", function () {",
+              "    pm.response.to.have.status(401);",
+              "});",
+              "",
+              "pm.test(\"Response has error message\", function () {",
+              "    const jsonData = pm.response.json();",
+              "    pm.expect(jsonData).to.have.property('message');",
+              "    pm.expect(jsonData.message).to.include('Unauthorized');",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{base_url}}/auth/me",
+          "host": ["{{base_url}}"],
+          "path": ["auth", "me"]
+        }
+      }
+    },
+    {
+      "name": "05 - Получение корзин пользователя",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Status code is 200\", function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "pm.test(\"Response has carts array\", function () {",
+              "    const jsonData = pm.response.json();",
+              "    pm.expect(jsonData).to.have.property('carts');",
+              "    pm.expect(jsonData.carts).to.be.an('array');",
+              "});",
+              "",
+              "pm.test(\"First cart has id\", function () {",
+              "    const jsonData = pm.response.json();",
+              "    if (jsonData.carts.length > 0) {",
+              "        pm.expect(jsonData.carts[0]).to.have.property('id');",
+              "        pm.environment.set(\"cartId\", jsonData.carts[0].id);",
+              "        console.log(\"✅ Cart ID saved:\", jsonData.carts[0].id);",
+              "    }",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{base_url}}/carts/user/{{userId}}",
+          "host": ["{{base_url}}"],
+          "path": ["carts", "user", "{{userId}}"]
+        }
+      }
+    },
+    {
+      "name": "06 - Получение корзины по ID",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Status code is 200\", function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "pm.test(\"Response has cart data\", function () {",
+              "    const jsonData = pm.response.json();",
+              "    pm.expect(jsonData).to.have.property('id');",
+              "    pm.expect(jsonData).to.have.property('userId');",
+              "    pm.expect(jsonData).to.have.property('products');",
+              "    pm.expect(jsonData.products).to.be.an('array');",
+              "});",
+              "",
+              "pm.test(\"Cart ID is 1\", function () {",
+              "    const jsonData = pm.response.json();",
+              "    pm.expect(jsonData.id).to.equal(1);",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{base_url}}/carts/1",
+          "host": ["{{base_url}}"],
+          "path": ["carts", "1"]
+        }
+      }
+    },
+    {
+      "name": "07 - Создание корзины",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Status code is 201\", function () {",
+              "    pm.response.to.have.status(201);",
+              "});",
+              "",
+              "pm.test(\"Response has created cart\", function () {",
+              "    const jsonData = pm.response.json();",
+              "    pm.expect(jsonData).to.have.property('id');",
+              "    pm.expect(jsonData).to.have.property('userId');",
+              "    pm.expect(jsonData).to.have.property('products');",
+              "    pm.expect(jsonData.products).to.be.an('array');",
+              "});",
+              "",
+              "pm.test(\"Cart has 2 products\", function () {",
+              "    const jsonData = pm.response.json();",
+              "    pm.expect(jsonData.products.length).to.equal(2);",
+              "});",
+              "",
+              "const jsonData = pm.response.json();",
+              "pm.environment.set(\"cartId\", jsonData.id);",
+              "console.log(\"✅ New cart created, ID:\", jsonData.id);"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{access_token}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n    \"userId\": 1,\n    \"products\": [\n        {\n            \"id\": 1,\n            \"quantity\": 1\n        },\n        {\n            \"id\": 2,\n            \"quantity\": 2\n        }\n    ]\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/carts/add",
+          "host": ["{{base_url}}"],
+          "path": ["carts", "add"]
+        }
+      }
+    },
+    {
+      "name": "08 - Обновление корзины",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Status code is 200\", function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "pm.test(\"Product quantity updated to 5\", function () {",
+              "    const jsonData = pm.response.json();",
+              "    pm.expect(jsonData).to.have.property('products');",
+              "    pm.expect(jsonData.products[0].quantity).to.equal(5);",
+              "});",
+              "",
+              "pm.test(\"Updated correct cart\", function () {",
+              "    const jsonData = pm.response.json();",
+              "    const expectedId = parseInt(pm.environment.get(\"cartId\"));",
+              "    pm.expect(jsonData.id).to.equal(expectedId);",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{access_token}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n    \"userId\": 1,\n    \"products\": [\n        {\n            \"id\": 1,\n            \"quantity\": 5\n        }\n    ]\n}"
+        },
+        "url": {
+          "raw": "{{base_url}}/carts/{{cartId}}",
+          "host": ["{{base_url}}"],
+          "path": ["carts", "{{cartId}}"]
+        }
+      }
+    },
+    {
+      "name": "09 - Удаление корзины",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Status code is 200\", function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "pm.test(\"Cart is marked as deleted\", function () {",
+              "    const jsonData = pm.response.json();",
+              "    pm.expect(jsonData).to.have.property('isDeleted', true);",
+              "    pm.expect(jsonData).to.have.property('deletedOn');",
+              "});",
+              "",
+              "pm.test(\"Deleted correct cart\", function () {",
+              "    const jsonData = pm.response.json();",
+              "    const expectedId = parseInt(pm.environment.get(\"cartId\"));",
+              "    pm.expect(jsonData.id).to.equal(expectedId);",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{access_token}}"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/carts/{{cartId}}",
+          "host": ["{{base_url}}"],
+          "path": ["carts", "{{cartId}}"]
+        }
+      }
+    },
+    {
+      "name": "10 - Негативная проверка (несуществующая корзина)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Status code is 404\", function () {",
+              "    pm.response.to.have.status(404);",
+              "});",
+              "",
+              "pm.test(\"Response has error message\", function () {",
+              "    const jsonData = pm.response.json();",
+              "    pm.expect(jsonData).to.have.property('message');",
+              "    pm.expect(jsonData.message).to.include('not found');",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{base_url}}/carts/999999",
+          "host": ["{{base_url}}"],
+          "path": ["carts", "999999"]
+        }
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "https://dummyjson.com"
+    },
+    {
+      "key": "access_token",
+      "value": ""
+    },
+    {
+      "key": "userId",
+      "value": ""
+    },
+    {
+      "key": "cartId",
+      "value": ""
+    }
+  ]
+}
